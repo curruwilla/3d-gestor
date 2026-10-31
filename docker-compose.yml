@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    container_name: 3d-gestor
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8090:8000"
+    volumes:
+      - ./data:/app/data
