@@ -72,8 +72,15 @@ def init_db():
                 custo_energia REAL NOT NULL,
                 custo_total REAL NOT NULL,
                 lucro REAL NOT NULL,
-                preco_final REAL NOT NULL
+                preco_final REAL NOT NULL,
+                quantidade INTEGER NOT NULL DEFAULT 1,
+                itens_placa INTEGER NOT NULL DEFAULT 1
             )""")
+        cols = {r["name"] for r in con.execute("PRAGMA table_info(calculos)")}
+        if "quantidade" not in cols:
+            con.execute("ALTER TABLE calculos ADD COLUMN quantidade INTEGER NOT NULL DEFAULT 1")
+        if "itens_placa" not in cols:
+            con.execute("ALTER TABLE calculos ADD COLUMN itens_placa INTEGER NOT NULL DEFAULT 1")
 
 
 class BadInput(ValueError):
@@ -90,7 +97,22 @@ def num(v, campo):
     return n
 
 
+def quantidade(v):
+    q = int(num(1 if v in (None, "") else v, "quantidade"))
+    if not 1 <= q <= 100_000:
+        raise BadInput("Quantidade deve ser entre 1 e 100000")
+    return q
+
+
+def itens_placa(v):
+    n = int(num(1 if v in (None, "") else v, "itens na placa"))
+    if not 1 <= n <= 1000:
+        raise BadInput("Itens na placa deve ser entre 1 e 1000")
+    return n
+
+
 def calcular(d):
+    """gramas/horas/minutos referem-se à placa inteira; custos saem por item."""
     preco_kg = num(d.get("preco_kg"), "preço do kg")
     gramas = num(d.get("gramas"), "gramas")
     horas = int(num(d.get("horas", 0), "horas"))
@@ -98,16 +120,20 @@ def calcular(d):
     tarifa = num(d.get("tarifa_kwh"), "tarifa kWh")
     consumo = num(d.get("consumo_w"), "consumo W")
     margem = num(d.get("margem"), "margem")
+    qtd = quantidade(d.get("quantidade"))
+    itens = itens_placa(d.get("itens_placa"))
 
-    tempo_h = horas + minutos / 60
-    custo_material = gramas / 1000 * preco_kg
+    tempo_h = (horas + minutos / 60) / itens
+    gramas_un = gramas / itens
+    custo_material = gramas_un / 1000 * preco_kg
     custo_energia = consumo / 1000 * tempo_h * tarifa
     custo_total = custo_material + custo_energia
     lucro = custo_total * margem / 100
     r = lambda x: round(x, 2)
     return {
         "preco_kg": preco_kg, "gramas": gramas, "horas": horas, "minutos": minutos,
-        "tarifa_kwh": tarifa, "consumo_w": consumo, "margem": margem,
+        "tarifa_kwh": tarifa, "consumo_w": consumo, "margem": margem, "quantidade": qtd,
+        "itens_placa": itens, "gramas_un": round(gramas_un, 3),
         "kwh": round(consumo / 1000 * tempo_h, 3),
         "custo_material": r(custo_material), "custo_energia": r(custo_energia),
         "custo_total": r(custo_total), "lucro": r(lucro),
@@ -117,7 +143,7 @@ def calcular(d):
 
 COLS = ("nome", "criado_em", "preco_kg", "gramas", "horas", "minutos", "tarifa_kwh",
         "consumo_w", "margem", "custo_material", "custo_energia", "custo_total",
-        "lucro", "preco_final")
+        "lucro", "preco_final", "quantidade", "itens_placa")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -177,13 +203,17 @@ class Handler(BaseHTTPRequestHandler):
                             [res[c] for c in COLS])
                         res["id"] = cur.lastrowid
                     return self._send(201, res)
-            if p.startswith("/api/historico/") and method == "DELETE":
+            if p.startswith("/api/historico/") and method in ("DELETE", "PATCH"):
                 try:
                     rid = int(p.rsplit("/", 1)[1])
                 except ValueError:
                     raise BadInput("id inválido")
                 with db() as con:
-                    con.execute("DELETE FROM calculos WHERE id = ?", (rid,))
+                    if method == "DELETE":
+                        con.execute("DELETE FROM calculos WHERE id = ?", (rid,))
+                    else:
+                        q = quantidade(self._json().get("quantidade"))
+                        con.execute("UPDATE calculos SET quantidade = ? WHERE id = ?", (q, rid))
                 return self._send(200, {"ok": True})
             return self._send(404, {"erro": "não encontrado"})
         except BadInput as e:
@@ -193,6 +223,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self): self._route("POST")
     def do_PUT(self): self._route("PUT")
     def do_DELETE(self): self._route("DELETE")
+    def do_PATCH(self): self._route("PATCH")
 
 
 if __name__ == "__main__":

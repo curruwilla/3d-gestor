@@ -26,6 +26,7 @@
   .card h2 { margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
   fieldset { border: 0; padding: 0; margin: 0 0 18px; }
   legend { font-weight: 600; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+  .hint { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
   .tag { font-size: 11px; font-weight: 500; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 0 7px; }
   .row { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
   label { display: block; font-size: 13px; color: var(--muted); }
@@ -44,13 +45,39 @@
   .final { margin-top: 14px; padding: 14px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 12%, transparent); text-align: center; }
   .final small { display: block; color: var(--muted); }
   .final strong { font-size: 30px; font-variant-numeric: tabular-nums; }
+  .lote { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .lote dl { margin-top: 10px; }
+  .lote .inp { max-width: 140px; }
+  td input.qtd { width: 64px; flex: none; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; text-align: right; background: var(--input); }
+  td input.qtd:focus { border-color: var(--accent); }
+  td.tot { color: var(--ok); font-weight: 600; }
   .save { margin-top: 14px; display: grid; gap: 8px; }
   .hist { grid-column: 1 / -1; }
   .hist-top { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 10px; }
   .hist-top .inp { margin: 0; min-width: 220px; }
-  .tbl { overflow-x: auto; }
+  .tbl { overflow: visible; }
   table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th, td { text-align: left; padding: 7px 5px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: middle; }
+  th { line-height: 1.2; }
+  td.n { white-space: nowrap; }
+  td.dt small { color: var(--muted); }
+  td.nm { overflow-wrap: anywhere; }
+  td.act { white-space: nowrap; text-align: right; }
+  @media (max-width: 900px) {
+    thead { display: none; }
+    table, tbody, tr, td { display: block; }
+    tr { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    tr:hover td { background: none; }
+    td { border: 0; padding: 3px 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    td[data-l]::before { content: attr(data-l); color: var(--muted); font-size: 13px; font-weight: 400; }
+    td.nm { grid-column: 1 / -1; font-weight: 600; font-size: 15px; }
+    td.dt { grid-column: 1 / -1; color: var(--muted); font-size: 13px; justify-content: flex-start; gap: 0; }
+    td.dt br { display: none; }
+    td.dt small::before { content: " "; }
+    td.act { grid-column: 1 / -1; justify-content: flex-end; }
+    td.empty { grid-column: 1 / -1; justify-content: center; }
+  }
+  @media (max-width: 480px) { tr { grid-template-columns: 1fr; } }
   th { font-size: 12px; color: var(--muted); font-weight: 600; }
   td.n, th.n { text-align: right; }
   tr:hover td { background: color-mix(in srgb, var(--accent) 5%, transparent); }
@@ -82,7 +109,9 @@
         <label>Material usado<div class="inp"><input name="gramas" inputmode="decimal" required><span>g</span></div></label>
         <label>Horas<div class="inp"><input name="horas" inputmode="numeric" value="0"><span>h</span></div></label>
         <label>Minutos<div class="inp"><input name="minutos" inputmode="numeric" value="0"><span>min</span></div></label>
+        <label>Itens na placa<div class="inp"><input name="itens_placa" inputmode="numeric" value="1"><span>un</span></div></label>
       </div>
+      <p class="hint">Com placa cheia, informe material e tempo da placa inteira — o custo é dividido pelos itens.</p>
     </fieldset>
     <fieldset>
       <legend>Energia <span class="tag">padrão</span></legend>
@@ -106,13 +135,25 @@
   <section class="card res">
     <h2>Resultado</h2>
     <dl>
+      <dt>Por item</dt><dd id="r_item">—</dd>
       <dt>Material</dt><dd id="r_material">—</dd>
       <dt>Energia <small id="r_kwh"></small></dt><dd id="r_energia">—</dd>
       <div class="sep"></div>
       <dt>Custo total</dt><dd id="r_custo">—</dd>
       <dt>Lucro</dt><dd id="r_lucro">—</dd>
+      <dt>Lucro por hora</dt><dd id="r_lucro_h">—</dd>
     </dl>
-    <div class="final"><small>Preço de venda</small><strong id="r_final">—</strong></div>
+    <div class="final"><small>Preço de venda (unidade)</small><strong id="r_final">—</strong></div>
+    <div class="lote">
+      <label>Quantidade de itens<div class="inp"><input id="qtd" inputmode="numeric" value="1"><span>un</span></div></label>
+      <dl>
+        <dt>Tempo total</dt><dd id="t_tempo">—</dd>
+        <dt>Filamento total</dt><dd id="t_gramas">—</dd>
+        <dt>Custo total</dt><dd id="t_custo">—</dd>
+        <dt>Lucro total</dt><dd id="t_lucro">—</dd>
+        <dt>Faturamento</dt><dd id="t_preco"><strong>—</strong></dd>
+      </dl>
+    </div>
     <div class="save">
       <label>Nome da peça / cliente<div class="inp"><input id="nome" placeholder="ex: Suporte headset – João" maxlength="200"></div></label>
       <button class="primary" type="button" id="btnSalvar">Salvar no histórico</button>
@@ -127,8 +168,9 @@
     <div class="tbl">
       <table>
         <thead><tr>
-          <th>Data</th><th>Nome</th><th class="n">Gramas</th><th class="n">Tempo</th>
-          <th class="n">Custo</th><th class="n">Margem</th><th class="n">Preço</th><th></th>
+          <th>Data</th><th>Nome</th><th class="n">Gramas<br>un.</th><th class="n">Tempo<br>un.</th>
+          <th class="n">Custo</th><th class="n">Margem</th><th class="n">Preço<br>un.</th>
+          <th class="n">Qtd</th><th class="n">Tempo<br>total</th><th class="n">Lucro<br>total</th><th class="n">Faturamento</th><th></th>
         </tr></thead>
         <tbody id="hist"></tbody>
       </table>
@@ -142,10 +184,18 @@ const $ = s => document.querySelector(s);
 const form = $('#form');
 const F = n => form.elements[n];
 const PADRAO = ['preco_kg', 'tarifa_kwh', 'consumo_w', 'margem'];
-const CAMPOS = ['preco_kg', 'gramas', 'horas', 'minutos', 'tarifa_kwh', 'consumo_w', 'margem'];
+const CAMPOS = ['preco_kg', 'gramas', 'horas', 'minutos', 'itens_placa', 'tarifa_kwh', 'consumo_w', 'margem'];
 const brl = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const fmt = v => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
 const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : NaN; };
+const qtdVal = v => { const n = Math.trunc(num(v)); return n >= 1 ? n : 1; };
+// minutos -> "2d 05h30" / "5h30"
+function tempo(min) {
+  min = Math.round(min);
+  const d = Math.floor(min / 1440), h = Math.floor(min % 1440 / 60), m = min % 60;
+  const hm = `${h}h${String(m).padStart(2, '0')}`;
+  return d ? `${d}d ${String(h).padStart(2, '0')}h${String(m).padStart(2, '0')}` : hm;
+}
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 2200); }
@@ -159,7 +209,7 @@ async function api(url, opts = {}) {
 
 function valores() {
   const d = {};
-  for (const c of CAMPOS) d[c] = F(c).value || (c === 'horas' || c === 'minutos' ? '0' : '');
+  for (const c of CAMPOS) d[c] = F(c).value || (c === 'horas' || c === 'minutos' ? '0' : c === 'itens_placa' ? '1' : '');
   return d;
 }
 
@@ -167,13 +217,16 @@ function valores() {
 function calcular() {
   const d = Object.fromEntries(Object.entries(valores()).map(([k, v]) => [k, num(v)]));
   if (Object.values(d).some(v => isNaN(v) || v < 0)) {
-    ['r_material', 'r_energia', 'r_custo', 'r_lucro', 'r_final'].forEach(id => $('#' + id).textContent = '—');
+    ['r_item', 'r_material', 'r_energia', 'r_custo', 'r_lucro', 'r_lucro_h', 'r_final', 't_tempo', 't_gramas', 't_custo', 't_lucro', 't_preco'].forEach(id => $('#' + id).textContent = '—');
     $('#r_kwh').textContent = '';
     return;
   }
-  const h = Math.trunc(d.horas) + Math.trunc(d.minutos) / 60;
-  const kwh = d.consumo_w / 1000 * h;
-  const mat = d.gramas / 1000 * d.preco_kg;
+  const itens = qtdVal(d.itens_placa);
+  const minUn = (Math.trunc(d.horas) * 60 + Math.trunc(d.minutos)) / itens;
+  const gUn = d.gramas / itens;
+  const kwh = d.consumo_w / 1000 * minUn / 60;
+  const mat = gUn / 1000 * d.preco_kg;
+  $('#r_item').textContent = `${fmt(gUn)} g · ${tempo(minUn)}`;
   const ene = kwh * d.tarifa_kwh;
   const custo = mat + ene;
   const lucro = custo * d.margem / 100;
@@ -182,7 +235,14 @@ function calcular() {
   $('#r_kwh').textContent = `(${fmt(kwh)} kWh)`;
   $('#r_custo').textContent = brl(custo);
   $('#r_lucro').textContent = brl(lucro);
+  $('#r_lucro_h').textContent = minUn > 0 ? `${brl(lucro / (minUn / 60))}/h` : '—';
   $('#r_final').textContent = brl(custo + lucro);
+  const q = qtdVal($('#qtd').value);
+  $('#t_tempo').textContent = tempo(minUn * q);
+  $('#t_gramas').textContent = `${fmt(gUn * q)} g`;
+  $('#t_custo').textContent = brl(custo * q);
+  $('#t_lucro').textContent = brl(lucro * q);
+  $('#t_preco').innerHTML = `<strong>${brl((custo + lucro) * q)}</strong>`;
 }
 
 async function carregarConfig() {
@@ -202,7 +262,7 @@ async function salvarHistorico() {
   const nome = $('#nome').value.trim();
   if (!nome) { $('#nome').focus(); return toast('Informe um nome'); }
   try {
-    await api('/api/historico', { method: 'POST', body: JSON.stringify({ ...valores(), nome }) });
+    await api('/api/historico', { method: 'POST', body: JSON.stringify({ ...valores(), nome, quantidade: qtdVal($('#qtd').value) }) });
     toast('Salvo no histórico');
     $('#nome').value = '';
     carregarHistorico();
@@ -214,17 +274,21 @@ async function carregarHistorico() {
   const q = encodeURIComponent($('#busca').value.trim());
   HIST = await api('/api/historico?q=' + q);
   const tb = $('#hist');
-  if (!HIST.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">Nenhum cálculo salvo.</td></tr>'; return; }
-  tb.innerHTML = HIST.map(r => `<tr>
-    <td>${new Date(r.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</td>
-    <td>${esc(r.nome)}</td>
-    <td class="n">${fmt(r.gramas)} g</td>
-    <td class="n">${r.horas}h${String(r.minutos).padStart(2, '0')}</td>
-    <td class="n">${brl(r.custo_total)}</td>
-    <td class="n">${fmt(r.margem)}%</td>
-    <td class="n"><strong>${brl(r.preco_final)}</strong></td>
-    <td><button class="link" data-load="${r.id}" title="Carregar no formulário">abrir</button><button class="del" data-del="${r.id}" title="Excluir">✕</button></td>
-  </tr>`).join('');
+  if (!HIST.length) { tb.innerHTML = '<tr><td colspan="12" class="empty">Nenhum cálculo salvo.</td></tr>'; return; }
+  tb.innerHTML = HIST.map(r => { const it = r.itens_placa || 1, minUn = (r.horas * 60 + r.minutos) / it; return `<tr>
+    <td class="dt">${new Date(r.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}<br><small>${new Date(r.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small></td>
+    <td class="nm">${esc(r.nome)}</td>
+    <td class="n" data-l="Gramas un.">${fmt(r.gramas / it)} g</td>
+    <td class="n" data-l="Tempo un." title="${it > 1 ? `Placa: ${it} itens, ${fmt(r.gramas)} g, ${r.horas}h${String(r.minutos).padStart(2, '0')}` : ''}">${tempo(minUn)}</td>
+    <td class="n" data-l="Custo">${brl(r.custo_total)}</td>
+    <td class="n" data-l="Margem">${fmt(r.margem)}%</td>
+    <td class="n" data-l="Preço un.">${brl(r.preco_final)}</td>
+    <td class="n" data-l="Qtd"><input class="qtd" data-qtd="${r.id}" inputmode="numeric" value="${r.quantidade}"></td>
+    <td class="n" data-l="Tempo total" data-c="tempo">${tempo(minUn * r.quantidade)}</td>
+    <td class="n tot" data-l="Lucro total" data-c="lucro">${brl(r.lucro * r.quantidade)}</td>
+    <td class="n" data-l="Faturamento" data-c="fat"><strong>${brl(r.preco_final * r.quantidade)}</strong></td>
+    <td class="act"><button class="link" data-load="${r.id}" title="Carregar no formulário">abrir</button><button class="del" data-del="${r.id}" title="Excluir">✕</button></td>
+  </tr>`; }).join('');
 }
 
 $('#hist').addEventListener('click', async e => {
@@ -233,6 +297,7 @@ $('#hist').addEventListener('click', async e => {
     const r = HIST.find(x => x.id == load);
     for (const c of CAMPOS) F(c).value = String(r[c]).replace('.', ',');
     $('#nome').value = r.nome;
+    $('#qtd').value = r.quantidade;
     calcular();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } else if (del) {
@@ -243,13 +308,30 @@ $('#hist').addEventListener('click', async e => {
   }
 });
 
+$('#hist').addEventListener('input', e => {
+  const id = e.target.dataset.qtd; if (!id) return;
+  const r = HIST.find(x => x.id == id), q = qtdVal(e.target.value), tr = e.target.closest('tr');
+  tr.querySelector('[data-c=tempo]').textContent = tempo((r.horas * 60 + r.minutos) / (r.itens_placa || 1) * q);
+  tr.querySelector('[data-c=lucro]').textContent = brl(r.lucro * q);
+  tr.querySelector('[data-c=fat]').innerHTML = `<strong>${brl(r.preco_final * q)}</strong>`;
+});
+$('#hist').addEventListener('change', async e => {
+  const id = e.target.dataset.qtd; if (!id) return;
+  const r = HIST.find(x => x.id == id), q = qtdVal(e.target.value);
+  e.target.value = q;
+  if (q === r.quantidade) return;
+  try { await api('/api/historico/' + id, { method: 'PATCH', body: JSON.stringify({ quantidade: q }) }); r.quantidade = q; toast('Quantidade atualizada'); }
+  catch (err) { toast(err.message); }
+});
+
 let buscaT;
 $('#busca').addEventListener('input', () => { clearTimeout(buscaT); buscaT = setTimeout(carregarHistorico, 250); });
 form.addEventListener('input', calcular);
+$('#qtd').addEventListener('input', calcular);
 form.addEventListener('submit', e => e.preventDefault());
 $('#btnSalvarPadrao').onclick = salvarPadrao;
 $('#btnSalvar').onclick = salvarHistorico;
-$('#btnLimpar').onclick = () => { F('gramas').value = ''; F('horas').value = '0'; F('minutos').value = '0'; $('#nome').value = ''; calcular(); F('gramas').focus(); };
+$('#btnLimpar').onclick = () => { F('gramas').value = ''; F('horas').value = '0'; F('minutos').value = '0'; F('itens_placa').value = '1'; $('#nome').value = ''; $('#qtd').value = '1'; calcular(); F('gramas').focus(); };
 $('#nome').addEventListener('keydown', e => { if (e.key === 'Enter') salvarHistorico(); });
 
 carregarConfig();
